@@ -65,6 +65,51 @@ void Token::get(istream &is)
                 DFA[state][ch] = ERROR; // initializes all the cells with error
             }
         }
+
+        // all the transitions from start state (ERROR or 0)        
+        for (char ch='0'; ch<'9'; ch++)
+            DFA[ERROR][int (ch)] = NUM_INT;
+
+        DFA[ERROR][(int) '.'] = NUM_REAL;
+        DFA[ERROR][(int) '+'] = ADDOP;
+        DFA[ERROR][(int) '-'] = ADDOP;
+
+        DFA[ERROR][(int) '*'] = MULOP;
+        DFA[ERROR][(int) '/'] = MULOP;
+        // need to think with <, >, and <=, >=
+        DFA[ERROR][(int) '<'] = RELOP;
+        DFA[ERROR][(int) '>'] = RELOP;
+
+        DFA[ERROR][(int) '='] = ASSIGNOP;
+
+        DFA[ERROR][(int) '('] = LPAREN;
+        DFA[ERROR][(int) ')'] = RPAREN;
+        DFA[ERROR][(int) '['] = LBRACK;
+        DFA[ERROR][(int) ']'] = RBRACK;
+
+        // "&&" = '&' + '&'
+        DFA[ERROR][(int) '&'] = AND;
+
+        DFA[ERROR][(int) ','] = COMMA;
+        DFA[ERROR][(int) ';'] = SEMICOLON;
+
         
+    }
+
+    // fill _value from input file and _type as token type
+    _value ="";
+    char ch;
+
+    // skip white spacing here
+
+
+    int curr=ERROR;
+    int prev=EOF_TOK;
+
+    while (curr!=ERROR) {
+        // get next character from input file
+        ch = is.get();
+        
+        // move to the next state based on character read
     }
 }
