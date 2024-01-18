@@ -13,9 +13,12 @@
 
 using namespace std;
 
+// DFA tabel
 static int **DFA=nullptr;
 #define ERROR -1
 #define NONE 0
+
+// Make your own enum for the states
 
 // the promised global for string equivalents of TokenType enumeration
 string TokStr[]=
@@ -80,31 +83,35 @@ void Token::get(istream &is)
         for (char ch='A'; ch<'Z'; ch++)
             DFA[NONE][(int) ch] = ID;
         
-        DFA[NONE][(int) '.'] = NUM_REAL;
         DFA[NONE][(int) '+'] = ADDOP;
         DFA[NONE][(int) '-'] = ADDOP;
-    
          
         DFA[NONE][(int) '*'] = MULOP;
         DFA[NONE][(int) '/'] = MULOP;
-       
-        /*
+        
         // need to think with <, >, and <=, >=
-        DFA[ERROR][(int) '<'] = RELOP;
-        DFA[ERROR][(int) '>'] = RELOP;
+        DFA[NONE][(int) '<'] = RELOP;
+        DFA[NONE][(int) '>'] = RELOP;
 
+        DFA[RELOP][(int) '='] = RELOP;
+        
         // one '=' goes to state 9, which is a final state but can keep going
         // if next ch is another '=', then go to state 8
         DFA[NONE][(int) '='] = ASSIGNOP;
-        */ 
+        DFA[ASSIGNOP][(int) '='] = RELOP;
+
         // States for parentases and brackets
         DFA[NONE][(int) '('] = LPAREN;
         DFA[NONE][(int) ')'] = RPAREN;
         DFA[NONE][(int) '['] = LBRACK;
         DFA[NONE][(int) ']'] = RBRACK;
         
-        // one '&' goes to state 12, which only then leads to 13 which is "&&" = '&' + '&'
-        //DFA[ERROR][(int) '&'] = AND;
+        // one '&' is a error, which only then leads to 13 which is "&&"
+        //DFA[NONE][(int) '&'] = AND;
+        DFA[AND][(int) '&'] = AND;
+
+        //DFA[NONE][(int) '|'] = OR;
+        DFA[OR][(int) '|'] = OR;
 
         DFA[NONE][(int) ','] = COMMA;
         DFA[NONE][(int) ';'] = SEMICOLON;
@@ -122,8 +129,11 @@ void Token::get(istream &is)
         for(char ch='0'; ch<'9'; ch++)
             DFA[NUM_INT][(int) ch] = NUM_INT; 
 
+        DFA[NUM_INT][(int) '.'] = NUM_REAL;
+
         for(char ch='0'; ch<'9'; ch++)
             DFA[NUM_REAL][(int) ch] = NUM_REAL;
+
     }
 
     // fill _value from input file and _type as token type
