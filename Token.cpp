@@ -17,6 +17,8 @@ using namespace std;
 static int **DFA=nullptr;
 #define ERROR -1
 #define NONE 0
+#define AND_BETWEEN 17
+#define OR_BETWEEEN 18
 
 // Make your own enum for the states
 
@@ -27,7 +29,6 @@ string TokStr[]=
 // This is a "list" of the keywords. Note that they are in the same order
 //   as found in the TokenType enumaration. 
 static string reserved[]={"int" , "float", "while", "if", "then", "else", "void", "begin", "end" };
-
 
 
 /******************************************************
@@ -65,8 +66,8 @@ void Token::get(istream &is)
 {
   // you must write this code !!!!
     if (!DFA) { // if dfa tabel doesn't exist ... create one
-        DFA = new int*[END+1]; // Create the rows, which are the different states 
-        for (int state=NONE; state<=END; state++) {
+        DFA = new int*[OR+3]; // Create the rows, which are the different states 
+        for (int state=NONE; state<=OR+2; state++) {
             DFA[state] = new int[256]; // creates the columns, which are the characters
             for (int ch=0; ch<256; ch++) {
                 DFA[state][ch] = ERROR; // initializes all the cells with error
@@ -107,11 +108,11 @@ void Token::get(istream &is)
         DFA[NONE][(int) ']'] = RBRACK;
         
         // one '&' is a error, which only then leads to 13 which is "&&"
-        //DFA[NONE][(int) '&'] = AND;
-        DFA[AND][(int) '&'] = AND;
+        DFA[NONE][(int) '&'] = AND_BETWEEN;
+        DFA[AND_BETWEEN][(int) '&'] = AND;
 
-        //DFA[NONE][(int) '|'] = OR;
-        DFA[OR][(int) '|'] = OR;
+        DFA[NONE][(int) '|'] = OR_BETWEEEN;
+        DFA[OR_BETWEEEN][(int) '|'] = OR;
 
         DFA[NONE][(int) ','] = COMMA;
         DFA[NONE][(int) ';'] = SEMICOLON;
@@ -131,6 +132,7 @@ void Token::get(istream &is)
 
         DFA[NUM_INT][(int) '.'] = NUM_REAL;
 
+        // all transitions form NUM_REAL state (NUM_REAL)
         for(char ch='0'; ch<'9'; ch++)
             DFA[NUM_REAL][(int) ch] = NUM_REAL;
 
@@ -148,7 +150,10 @@ void Token::get(istream &is)
         
         ch = is.get();
     }
-    //if(!is)
+
+    if (ch=='#') {
+    }
+
     is.putback(ch);
 
     int curr=NONE;
@@ -168,7 +173,20 @@ void Token::get(istream &is)
     }
 
     _type = (TokenType) prev;
-    
+
+    if (_value == "&" || _value == "|") {
+        _type = (TokenType) NONE; 
+    }
+
+    // if token is a keyword, change the the type
+    if(_type == ID){
+        for(int i=0; i < 9; i++){
+            if(_value == reserved[i]){
+                _type = (TokenType) (i+17);
+            }
+        }
+    }
+
     // We read one more extra character ... put it back for the next get()
     if (is)
         is.putback(ch);
