@@ -134,7 +134,7 @@ void Token::get(istream &is)
         for (char ch='A'; ch<'Z'; ch++)
             DFA[ID][(int) ch] = ID;
 
-        for (char ch='1'; ch<'9'; ch++)
+        for (char ch='0'; ch<'9'; ch++)
             DFA[ID][(int) ch] = ID;
 
         // all transitions from NUM_INT state (NUM_INT or 1)
