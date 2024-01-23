@@ -1,7 +1,7 @@
 /*******************************************
  * File: Token.cpp                         *
- * Author: S. Blythe                       *
- * Date: 12/2023                           *
+ * Author: Eric Hansson                    *
+ * Date: 1/21/2023                         *
  * PURPOSE: implementation for Token       *
  *******************************************/
 
@@ -10,6 +10,7 @@
 #include <cctype>
 #include <fstream>
 #include <iomanip>
+#include <string>
 
 using namespace std;
 
@@ -19,8 +20,6 @@ static int **DFA=nullptr;
 #define NONE 0
 #define AND_BETWEEN 17
 #define OR_BETWEEEN 18
-
-// Make your own enum for the states
 
 // the promised global for string equivalents of TokenType enumeration
 string TokStr[]=
@@ -66,9 +65,14 @@ void Token::get(istream &is)
 {
   // you must write this code !!!!
     if (!DFA) { // if dfa tabel doesn't exist ... create one
-        DFA = new int*[OR+3]; // Create the rows, which are the different states 
+        // we read a file the line num always start on 1
+        _line_num = 1;
+
+        // Create the rows, which are the different states
+        DFA = new int*[OR+3]; 
         for (int state=NONE; state<=OR+2; state++) {
-            DFA[state] = new int[256]; // creates the columns, which are the characters
+            // creates the columns, which are the characters
+            DFA[state] = new int[256]; 
             for (int ch=0; ch<256; ch++) {
                 DFA[state][ch] = ERROR; // initializes all the cells with error
             }
@@ -78,40 +82,47 @@ void Token::get(istream &is)
         for (char ch='0'; ch<'9'; ch++)
             DFA[NONE][(int) ch] = NUM_INT;
 
+        // all the transition form start state (NONE or 0)
         for (char ch='a'; ch<'z'; ch++)
             DFA[NONE][(int) ch] = ID;
 
         for (char ch='A'; ch<'Z'; ch++)
             DFA[NONE][(int) ch] = ID;
-        
+       
+        // Final state from start state 
         DFA[NONE][(int) '+'] = ADDOP;
         DFA[NONE][(int) '-'] = ADDOP;
          
+        // Final state from start state 
         DFA[NONE][(int) '*'] = MULOP;
         DFA[NONE][(int) '/'] = MULOP;
         
-        // need to think with <, >, and <=, >=
+        // Final state from start state 
         DFA[NONE][(int) '<'] = RELOP;
         DFA[NONE][(int) '>'] = RELOP;
 
+        // Final state from start state 
         DFA[RELOP][(int) '='] = RELOP;
         
-        // one '=' goes to state 9, which is a final state but can keep going
-        // if next ch is another '=', then go to state 8
+        // Final state when assign operator, non-final for relation operator
         DFA[NONE][(int) '='] = ASSIGNOP;
+        // Final state for relation operator
         DFA[ASSIGNOP][(int) '='] = RELOP;
 
-        // States for parentases and brackets
+        // Final state from start state 
         DFA[NONE][(int) '('] = LPAREN;
         DFA[NONE][(int) ')'] = RPAREN;
         DFA[NONE][(int) '['] = LBRACK;
         DFA[NONE][(int) ']'] = RBRACK;
         
-        // one '&' is a error, which only then leads to 13 which is "&&"
+        // Non-final state, gives error
         DFA[NONE][(int) '&'] = AND_BETWEEN;
+        // Final state
         DFA[AND_BETWEEN][(int) '&'] = AND;
 
+        // Non-final state, gives error
         DFA[NONE][(int) '|'] = OR_BETWEEEN;
+        // Final state
         DFA[OR_BETWEEEN][(int) '|'] = OR;
 
         DFA[NONE][(int) ','] = COMMA;
@@ -137,25 +148,40 @@ void Token::get(istream &is)
             DFA[NUM_REAL][(int) ch] = NUM_REAL;
 
     }
-
     // fill _value from input file and _type as token type
     _value ="";
     char ch;
+    // Check if comments is true or false
+    bool comment = false;
 
     // skip white spacing here
     ch = is.get();
-    while (isspace(ch)) {
-        if(ch=='\n') // increments the number if line when there is also a blank line
+
+    // If at the end, then EOF_TOK
+    if(!is)
+        _type = EOF_TOK;
+
+    // Skips white spacing and comments
+    while (isspace(ch) || ch == '#' || comment == true) {
+        if(ch=='\n'){ // increments the number if line when there is also a blank line
             _line_num++;
-        
+            comment = false;
+        }
+        // ch is '#', then it is a comment
+        if (ch == '#') {
+            comment = true; 
+        }
         ch = is.get();
     }
-
-    if (ch=='#') {
+    // if at end of the file, token is EOF_TOK 
+    if (!is) {
+        _type = EOF_TOK;
+        return; 
     }
 
     is.putback(ch);
 
+    // Keeps track of the current state and previous
     int curr=NONE;
     int prev=ERROR;
 
@@ -171,9 +197,10 @@ void Token::get(istream &is)
             _value+=ch;    // ... add char to lexeme's value
         }
     }
-
+    // the type of the token
     _type = (TokenType) prev;
 
+    // token is '&' or '|', then their are error
     if (_value == "&" || _value == "|") {
         _type = (TokenType) NONE; 
     }
